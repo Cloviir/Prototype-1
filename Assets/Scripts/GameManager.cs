@@ -3,22 +3,24 @@ using UnityEngine.SceneManagement;
 
 public enum GameState { Playing, Won, Lost }
 
-// Tracks knockouts, lives, and game state. Put this on an empty "GameManager" object.
+// Tracks waves, knockouts, lives, and game state. Put this on an empty "GameManager" object.
+// Win by clearing the final wave; lose by running out of lives.
 public class GameManager : MonoBehaviour
 {
     public static GameManager Instance { get; private set; }
 
     [Header("Rules")]
-    public int knockoutsToWin = 5;
+    [Tooltip("Clear this many waves to win.")]
+    public int wavesToWin = 5;
     public int startingLives = 3;
-
-    [Header("Focused Variation: heavier opponents")]
-    public int knockoutsBeforeHeavy = 2;
-    public float heavyMassMultiplier = 2.5f;
 
     public GameState State { get; private set; } = GameState.Playing;
     public int Knockouts { get; private set; }
     public int Lives { get; private set; }
+    public int CurrentWave { get; private set; }
+
+    int waveTotal;
+    int waveKnockouts;
 
     string flashMessage = "";
     float flashUntil;
@@ -30,21 +32,37 @@ public class GameManager : MonoBehaviour
         Time.timeScale = 1f; // reset in case we restarted from a paused state
     }
 
-    // Opponents read this when they spawn (the focused variation).
-    public bool HeavyOpponentsActive => Knockouts >= knockoutsBeforeHeavy;
+    // Called by OpponentSpawner at the start of each wave.
+    public void StartWave(int wave, int opponentCount)
+    {
+        CurrentWave = wave;
+        waveTotal = opponentCount;
+        waveKnockouts = 0;
+
+        if (wave == wavesToWin) Flash($"FINAL WAVE! {opponentCount} opponents");
+        else if (wave > 1) Flash($"Wave {wave}: {opponentCount} opponents, tougher and faster!");
+        else Flash($"Wave 1: {opponentCount} opponents");
+    }
+
+    // Called by OpponentSpawner when every opponent in the wave is gone.
+    public void WaveCleared()
+    {
+        if (State != GameState.Playing) return;
+
+        Debug.Log($"Wave {CurrentWave} cleared!");
+        if (CurrentWave >= wavesToWin)
+            SetState(GameState.Won);
+        else
+            Flash($"Wave {CurrentWave} cleared! Get ready...");
+    }
 
     public void AddKnockout()
     {
         if (State != GameState.Playing) return;
 
         Knockouts++;
-        Debug.Log($"Knockout! {Knockouts}/{knockoutsToWin}");
-
-        if (Knockouts == knockoutsBeforeHeavy)
-            Flash("Heavier opponents incoming!");
-
-        if (Knockouts >= knockoutsToWin)
-            SetState(GameState.Won);
+        waveKnockouts++;
+        Debug.Log($"Knockout! Total: {Knockouts}");
     }
 
     public void LoseLife()
@@ -82,8 +100,11 @@ public class GameManager : MonoBehaviour
     void OnGUI()
     {
         var hud = new GUIStyle(GUI.skin.label) { fontSize = 24 };
-        GUI.Label(new Rect(20, 20, 400, 40), $"Knockouts: {Knockouts} / {knockoutsToWin}", hud);
-        GUI.Label(new Rect(20, 55, 400, 40), $"Lives: {Lives}", hud);
+        string waveText = CurrentWave > 0
+            ? $"Wave: {CurrentWave} / {wavesToWin}   ({waveKnockouts}/{waveTotal} knocked out)"
+            : "Get ready...";
+        GUI.Label(new Rect(20, 20, 700, 40), waveText, hud);
+        GUI.Label(new Rect(20, 55, 400, 40), $"Lives: {Lives}   Total KOs: {Knockouts}", hud);
         GUI.Label(new Rect(20, 90, 600, 40), "WASD: move   Space: shove", hud);
 
         var center = new GUIStyle(GUI.skin.label)
@@ -91,9 +112,9 @@ public class GameManager : MonoBehaviour
         var box = new Rect(0, Screen.height / 2f - 100, Screen.width, 200);
 
         if (State == GameState.Won)
-            GUI.Label(box, $"YOU WIN!\nYou knocked out {knockoutsToWin} opponents.\nPress R to restart", center);
+            GUI.Label(box, $"YOU WIN!\nYou survived all {wavesToWin} waves ({Knockouts} knockouts).\nPress R to restart", center);
         else if (State == GameState.Lost)
-            GUI.Label(box, "YOU LOSE\nYou were knocked out of the arena too many times.\nPress R to restart", center);
+            GUI.Label(box, $"YOU LOSE\nYou made it to wave {CurrentWave}.\nPress R to restart", center);
         else if (Time.time < flashUntil)
             GUI.Label(new Rect(0, 140, Screen.width, 50), flashMessage, center);
     }

@@ -4,9 +4,12 @@ using UnityEngine;
 // Places one power-up at a random spot on the arena.
 // First one appears after firstSpawnDelay. After it's picked up,
 // the next one appears respawnDelay seconds later.
+// Each time, it randomly picks between the Power Up Prefab and any Extra Power Up Prefabs.
 public class PowerUpSpawner : MonoBehaviour
 {
     public GameObject powerUpPrefab;
+    [Tooltip("Other power-ups to randomly choose from (e.g. VortexPowerUp).")]
+    public GameObject[] extraPowerUpPrefabs;
     public float firstSpawnDelay = 5f;
     public float respawnDelay = 10f;
     [Tooltip("How far from the center it can appear. Keep it inside the arena edge (arena is 12 wide, so edge is 6).")]
@@ -40,30 +43,45 @@ public class PowerUpSpawner : MonoBehaviour
         }
     }
 
+    // Picks the base prefab or one of the extras with equal chance.
+    GameObject PickPrefab()
+    {
+        int extras = extraPowerUpPrefabs != null ? extraPowerUpPrefabs.Length : 0;
+        int index = Random.Range(0, extras + 1);
+        if (index == 0) return powerUpPrefab;
+
+        GameObject extra = extraPowerUpPrefabs[index - 1];
+        return extra != null ? extra : powerUpPrefab;
+    }
+
     void SpawnPowerUp()
     {
+        GameObject prefab = PickPrefab();
+        Vector3 pos = transform.position + Vector3.up * spawnHeight; // fallback: center
+
         // Try up to 20 random spots and use the first one that isn't
         // overlapping a wall, obstacle, opponent, or the player.
         for (int attempt = 0; attempt < 20; attempt++)
         {
-            Vector3 pos = transform.position + new Vector3(
+            Vector3 candidate = transform.position + new Vector3(
                 Random.Range(-spawnRange, spawnRange),
                 spawnHeight,
                 Random.Range(-spawnRange, spawnRange));
 
-            if (!Physics.CheckSphere(pos, clearRadius, ~0, QueryTriggerInteraction.Ignore))
+            if (!Physics.CheckSphere(candidate, clearRadius, ~0, QueryTriggerInteraction.Ignore))
             {
-                current = Instantiate(powerUpPrefab, pos, Quaternion.identity);
-                Debug.Log($"Power-up spawned at {pos}");
-                GameManager.Instance.Flash("A power-up appeared! Grab it for a stronger shove!");
-                return;
+                pos = candidate;
+                break;
             }
         }
 
-        // Couldn't find a clear spot; fall back to the center of the arena.
-        Vector3 center = transform.position + Vector3.up * spawnHeight;
-        current = Instantiate(powerUpPrefab, center, Quaternion.identity);
-        Debug.Log("No clear spot found, power-up spawned at center");
-        GameManager.Instance.Flash("A power-up appeared! Grab it for a stronger shove!");
+        current = Instantiate(prefab, pos, Quaternion.identity);
+        Debug.Log($"{prefab.name} spawned at {pos}");
+
+        PowerUp pu = current.GetComponent<PowerUp>();
+        if (pu != null && pu.type == PowerUpType.Vortex)
+            GameManager.Instance.Flash("A VORTEX power-up appeared! Pull them in!");
+        else
+            GameManager.Instance.Flash("A power-up appeared! Grab it for a stronger shove!");
     }
 }

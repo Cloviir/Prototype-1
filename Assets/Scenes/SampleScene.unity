@@ -1781,6 +1781,12 @@ MonoBehaviour:
   shoveCooldown: 0.6
   shoveLift: 0.2
   boostedColor: {r: 1, g: 0.85, b: 0, a: 1}
+  vortexRadius: 6
+  vortexPull: 30
+  vortexSwirl: 15
+  vortexInnerRadius: 1.2
+  vortexBurst: 22
+  vortexColor: {r: 0.6, g: 0.2, b: 1, a: 1}
   respawnPoint: {fileID: 0}
 --- !u!1 &1538184934
 GameObject:
@@ -2261,6 +2267,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PowerUpSpawner
   powerUpPrefab: {fileID: 7943529624308852259, guid: 4a3ccdf36cdb2dd4ca5a20130bb7a1df, type: 3}
+  extraPowerUpPrefabs:
+  - {fileID: 7943529624308852259, guid: 38eaf1cc328587742b094794b9becb87, type: 3}
   firstSpawnDelay: 7
   respawnDelay: 15
   spawnRange: 4

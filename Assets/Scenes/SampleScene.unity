@@ -1187,6 +1187,17 @@ MonoBehaviour:
   firstSpawnDelay: 1
   spawnInterval: 3
   maxActiveOpponents: 3
+  timeBetweenWaves: 3
+  baseOpponents: 3
+  opponentsPerWave: 2
+  mediumStartWave: 2
+  mediumChancePerWave: 0.25
+  maxMediumChance: 0.5
+  heavyStartWave: 3
+  heavyChancePerWave: 0.15
+  maxHeavyChance: 0.4
+  speedIncreasePerWave: 0.1
+  wavesPerExtraActive: 2
 --- !u!1 &752136302
 GameObject:
   m_ObjectHideFlags: 0
@@ -1882,10 +1893,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 11c87e1242b2978408e072138871e920, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GameManager
-  knockoutsToWin: 5
+  wavesToWin: 3
   startingLives: 3
-  knockoutsBeforeHeavy: 2
-  heavyMassMultiplier: 2.5
 --- !u!4 &1689798488
 Transform:
   m_ObjectHideFlags: 0
